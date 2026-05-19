@@ -1,6 +1,8 @@
 package edu.touro.las.mcon364.taskmanager;
 
-import java.util.Objects;
+public record Task(String name, Priority priority) {}
+
+/*import java.util.Objects;
 
 public class Task {
     private final String name;
@@ -32,4 +34,6 @@ public class Task {
     public int hashCode() {
         return Objects.hash(name, priority);
     }
-}
+}*/
+
+

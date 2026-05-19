@@ -1,5 +1,7 @@
 package edu.touro.las.mcon364.taskmanager;
 
+import java.util.Optional;
+
 public class DemoMain {
     private final TaskRegistry registry;
     private final TaskManager manager;
@@ -18,11 +20,13 @@ public class DemoMain {
         System.out.println("=== Task Management System Demo ===\n");
 
         demonstrateAddingTasks();
+        demonstrateDuplicateTask();
         demonstrateRetrievingTask();
         demonstrateUpdatingTask();
         demonstrateUpdatingNonExistentTask();
         demonstrateRemovingTask();
         demonstrateNullReturn();
+        demonstrateTasksByPriority();
         displaySummary();
     }
 
@@ -38,14 +42,21 @@ public class DemoMain {
         displayAllTasks();
     }
 
+    private void demonstrateDuplicateTask() {
+        System.out.println("\n2. Attempting to add duplicate tasks...");
+        try {
+            manager.run(new AddTaskCommand(registry, new Task("Write documentation", Priority.HIGH)));
+        } catch (DuplicateTaskException e) {
+            System.out.println(" Caught DuplicateTaskException:  " + e.getMessage());
+        }
+    }
+
     private void demonstrateRetrievingTask() {
         System.out.println("\n2. Retrieving a specific task...");
-        Task retrieved = registry.get("Fix critical bug");
-        if (retrieved != null) {
-            System.out.println("   Found: " + retrieved.getName() + " (Priority: " + retrieved.getPriority() + ")");
-        } else {
-            System.out.println("   Task not found");
-        }
+        registry.get("Fix critical bug").ifPresentOrElse(
+                task -> System.out.println("Found: " + task.name() + " (Priority: " + task.priority() + ")"),
+                () -> System.out.println(" Task not found")
+        );
     }
 
     private void demonstrateUpdatingTask() {
@@ -57,23 +68,37 @@ public class DemoMain {
 
     private void demonstrateUpdatingNonExistentTask() {
         System.out.println("\n4. Attempting to update non-existent task...");
-        manager.run(new UpdateTaskCommand(registry, "Non-existent task", Priority.HIGH));
-        System.out.println("   ^ This should throw a custom exception, not just print a warning!");
+        try {
+            manager.run(new UpdateTaskCommand(registry, "Non-existent task", Priority.HIGH));
+        } catch (TaskNotFoundException e) {
+            System.out.println(" Caught TaskNotFoundException:  " + e.getMessage());
+        }
     }
 
     private void demonstrateRemovingTask() {
         System.out.println("\n5. Removing a task...");
-        manager.run(new RemoveTaskCommand(registry, "Update dependencies"));
-        System.out.println("   Removed 'Update dependencies'");
-        displayAllTasks();
+        try {
+            manager.run(new RemoveTaskCommand(registry, "Update dependencies"));
+        } catch (TaskNotFoundException e) {
+            System.out.println(" Caught TaskNotFoundException: " + e.getMessage());
+        }
+        //displayAllTasks();
     }
 
     private void demonstrateNullReturn() {
         System.out.println("\n6. Attempting to retrieve non-existent task...");
-        Task missing = registry.get("Non-existent task");
-        if (missing == null) {
-            System.out.println("   Returned null - this should be refactored to use Optional!");
+        Optional<Task> missing = registry.get("Non-existent task");
+        if (missing.isEmpty()) {
+            System.out.println("   Returned Optional.empty() ");
         }
+    }
+
+    private void demonstrateTasksByPriority() {
+        System.out.println("\n7. Tasks grouping by priority...");
+        registry.getTasksByPriority().forEach((priority, taskList) -> {
+            System.out.println(" " + priority + ":");
+            taskList.forEach(task -> System.out.println("   - " + task.name()));
+        });
     }
 
     private void displaySummary() {
@@ -90,7 +115,7 @@ public class DemoMain {
     private void displayAllTasks() {
         System.out.println("\n   Current tasks in registry:");
         registry.getAll().forEach((name, task) ->
-            System.out.println("     - " + name + " (Priority: " + task.getPriority() + ")")
+            System.out.println("     - " + name + " (Priority: " + task.priority() + ")")
         );
     }
 }
