@@ -25,10 +25,10 @@ class TaskManagerTest {
     void testRunAddTaskCommand() {
         Task task = new Task("Test task", Priority.MEDIUM);
         Command command = new AddTaskCommand(registry, task);
-
         manager.run(command);
 
-        assertNotNull(registry.get("Test task"), "Task should be added");
+        assertTrue(registry.get("Test task").isPresent(),
+                "Task should be added");
     }
 
     @Test
@@ -36,10 +36,10 @@ class TaskManagerTest {
     void testRunRemoveTaskCommand() {
         registry.add(new Task("Remove me", Priority.HIGH));
         Command command = new RemoveTaskCommand(registry, "Remove me");
-
         manager.run(command);
 
-        assertNull(registry.get("Remove me"), "Task should be removed");
+        assertTrue(registry.get("Remove me").isEmpty(),
+                "Task should be removed");
     }
 
     @Test
@@ -47,10 +47,9 @@ class TaskManagerTest {
     void testRunUpdateTaskCommand() {
         registry.add(new Task("Update me", Priority.LOW));
         Command command = new UpdateTaskCommand(registry, "Update me", Priority.HIGH);
-
         manager.run(command);
 
-        assertEquals(Priority.HIGH, registry.get("Update me").getPriority(),
+        assertEquals(Priority.HIGH, registry.get("Update me").orElseThrow().priority(),
                 "Task priority should be updated");
     }
 
@@ -62,9 +61,12 @@ class TaskManagerTest {
         manager.run(new UpdateTaskCommand(registry, "Task 2", Priority.MEDIUM));
         manager.run(new RemoveTaskCommand(registry, "Task 1"));
 
-        assertNull(registry.get("Task 1"), "Task 1 should be removed");
-        assertNotNull(registry.get("Task 2"), "Task 2 should still exist");
-        assertEquals(Priority.MEDIUM, registry.get("Task 2").getPriority(),
+        assertTrue(registry.get("Task 1").isEmpty(),
+                "Task 1 should be removed");
+        assertTrue(registry.get("Task 2").isPresent(),
+                "Task 2 should still exist");
+        assertEquals(Priority.MEDIUM,
+                registry.get("Task 2").orElseThrow().priority(),
                 "Task 2 priority should be updated");
     }
 
